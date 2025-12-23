@@ -54,8 +54,28 @@ const App: React.FC = () => {
   const departmentChartData = useMemo(() => {
     const agg: Record<string, number> = {};
     
+    // Determine which departments should be shown
+    let deptsToShow: string[] = [];
+    if (selectedDepts.length > 0) {
+      // Show exactly what is selected
+      deptsToShow = DEPARTMENTS
+        .filter(d => selectedDepts.includes(d.id))
+        .map(d => d.name);
+    } else {
+      // If nothing is selected, show all departments that have at least one doctor
+      deptsToShow = Array.from(new Set(DOCTORS.map(d => d.department)));
+    }
+
+    // Initialize all departments with 0
+    deptsToShow.forEach(name => {
+      agg[name] = 0;
+    });
+
+    // Add counts from filtered doctors
     filteredDoctors.forEach(doc => {
-      agg[doc.department] = (agg[doc.department] || 0) + doc.noteCount;
+      if (agg[doc.department] !== undefined) {
+        agg[doc.department] += doc.noteCount;
+      }
     });
 
     return Object.keys(agg)
@@ -63,8 +83,8 @@ const App: React.FC = () => {
         department: deptName,
         totalNotes: agg[deptName]
       }))
-      .sort((a, b) => b.totalNotes - a.totalNotes);
-  }, [filteredDoctors]);
+      .sort((a, b) => b.totalNotes - a.totalNotes || a.department.localeCompare(b.department));
+  }, [filteredDoctors, selectedDepts]);
 
   const toggleDept = (id: string) => {
     const isRemoving = selectedDepts.includes(id);
@@ -120,7 +140,7 @@ const App: React.FC = () => {
         />
 
         <div className="mt-auto pt-6 border-t border-gray-100">
-          <p className="text-xs text-gray-400 font-medium">System Version: 2.7.0</p>
+          <p className="text-xs text-gray-400 font-medium">System Version: 2.8.0</p>
         </div>
       </aside>
 
@@ -217,8 +237,8 @@ const App: React.FC = () => {
               <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p className="font-medium">No practitioners match the filter criteria</p>
-              <p className="text-sm">Try adjusting your filters in the sidebar</p>
+              <p className="font-medium">No departments to display</p>
+              <p className="text-sm">Try selecting a department in the sidebar</p>
             </div>
           )}
         </div>
